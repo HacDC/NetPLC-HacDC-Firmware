@@ -1,0 +1,3 @@
+[submodule "lib/EtherCard"]
+	path = lib/EtherCard
+	url = git@github.com:jcw/ethercard.git
