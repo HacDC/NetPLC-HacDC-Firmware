@@ -34,12 +34,9 @@ cd ./build
 readableCMake -DCMAKE_BUILD_TYPE=Release ../
 readableMake upload
 
-sleep 3
-
 #../cmake/ard-reset-arduino --caterina /dev/ttyACM0
+sleep 1
 
-sleep 3
-
-make Blink-serial
+make WebUI-serial
 
 echo -e '\E[1;32;46m Compilation finished. \E[0m'
