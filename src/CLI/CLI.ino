@@ -4,6 +4,9 @@
 #include "SPI.h"
 #include "UIPEthernet.h"
 
+#include "EEPROMex.h"
+#include "EDB.h"
+
 // ethernet interface mac address, must be unique on the LAN
 //Xen prefix 00:16:3E, random suffix.
 static uint8_t mac[] = { 0x00, 0x16, 0x3E, 0x72, 0x6A, 0x48 };

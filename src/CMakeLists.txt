@@ -4,6 +4,8 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 set(EtherCard_RECURSE True)
 set(UIPEthernet_RECURSE True)
 set(WebServer_RECURSE True)
+set(EEPROMex_RECURSE True)
+set(EDB_RECURSE True)
 
 
 set(ARDUINO_DEFAULT_BOARD leonardo) # Default Board ID, when not specified
