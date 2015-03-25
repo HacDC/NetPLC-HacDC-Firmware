@@ -1,11 +1,35 @@
+#include "Arduino.h"
 #include <avr/io.h>
 #include "prescaler.h"
 
 #include "SPI.h"
 #include "UIPEthernet.h"
 
-#include "EEPROMex.h"
+#include <EEPROM.h>
+//#include "EEPROMex.h"
 #include "EDB.h"
+
+//RFID membership database parameters.
+#define memberDB_TableSize 480	//60 8-byte entries
+struct hacdcMember {
+  char shortName[4];
+  int tagID;
+  uint8_t permitted;	//Binary, true/false, 1/0.
+} hacdcMember;
+
+// The read and write handlers for using the EEPROM Library
+void writer(unsigned long address, byte data)
+{
+  EEPROM.write(address, data);
+}
+
+byte reader(unsigned long address)
+{
+  return EEPROM.read(address);
+}
+
+// Create an EDB object with the appropriate write and read handlers
+EDB memberDB(&writer, &reader);
 
 // ethernet interface mac address, must be unique on the LAN
 //Xen prefix 00:16:3E, random suffix.
@@ -43,6 +67,9 @@ void processLineSerial(char line[]) {
 			"commands\n"
 			"shownet\n"
 			"readout\n"
+			"countMembers\n"
+			"showMembers\n"
+			"addMember\n"
 		);
 	
 	if (strncmp("shownet", line, 7) == 0) {
@@ -60,6 +87,47 @@ void processLineSerial(char line[]) {
 		Serial.print( "\n"
 			"stuff\n"
 		);
+	
+	if (strncmp("countMembers", line, 12) == 0) {
+		Serial.print( "\n" );
+		Serial.print(memberDB.count());
+		Serial.print( "\n" );
+	}
+	
+	if (strncmp("showMembers", line, 11) == 0) {
+		struct hacdcMember hacdcMemberInProgress;
+		
+		
+		for (int i = 1; i <= memberDB.count(); i++)
+		{
+			Serial.print("addMember	");
+			memberDB.readRec(i, EDB_REC hacdcMemberInProgress);
+			Serial.print("	");
+			for (int i=0; i < 4; i++)
+				Serial.print(hacdcMemberInProgress.shortName[i]);
+			Serial.print("	");
+			Serial.print(hacdcMemberInProgress.tagID);
+			Serial.print("	");
+			Serial.print(hacdcMemberInProgress.permitted);
+			Serial.print("	#");
+			Serial.print(i);
+			Serial.print("\n");
+		}
+	}
+	
+	if (strncmp("addMember", line, 9) == 0) {
+		char *token;
+		struct hacdcMember hacdcMemberInProgress;
+		
+		strtok(line, "	");
+		
+		strncpy(hacdcMemberInProgress.shortName, strtok(NULL, "	"), 4);
+		hacdcMemberInProgress.tagID = atoi((strtok(NULL, "	")));
+		hacdcMemberInProgress.permitted = atoi((strtok(NULL, "	")));
+		
+		memberDB.appendRec(EDB_REC hacdcMemberInProgress);
+	}
+	
 }
 
 char* bufferLine(char newChar) {
@@ -95,14 +163,15 @@ void setup() {
 	
 	int led = A5;
 	
-	// initialize the digital pin as an output.
+	memberDB.create(0, memberDB_TableSize, sizeof(hacdcMember));
+	
+	//LED startup indicator, and delay for host serial console.
 	pinMode(led, OUTPUT);
 	digitalWrite(led, HIGH);
 	trueDelay(100);
 	digitalWrite(led, LOW);
 	trueDelay(100);
 	digitalWrite(led, HIGH);
-
 	trueDelay(1500);
 	
 	
