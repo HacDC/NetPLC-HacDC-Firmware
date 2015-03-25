@@ -81,6 +81,7 @@ EDB_Status EDB::create(unsigned long head_ptr, unsigned long tablesize, unsigned
 EDB_Status EDB::open(unsigned long head_ptr)
 {
   EDB_head_ptr = head_ptr;
+  EDB_table_ptr = sizeof(EDB_Header) + EDB_head_ptr; // this line is added
   readHead();
   return EDB_OK;
 }

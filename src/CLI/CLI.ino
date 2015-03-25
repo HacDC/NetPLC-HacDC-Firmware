@@ -67,6 +67,7 @@ void processLineSerial(char line[]) {
 			"commands\n"
 			"shownet\n"
 			"readout\n"
+			"formatMembers\n"
 			"countMembers\n"
 			"showMembers\n"
 			"addMember\n"
@@ -88,6 +89,9 @@ void processLineSerial(char line[]) {
 			"stuff\n"
 		);
 	
+	if (strncmp("formatMembers", line, 13) == 0)
+		memberDB.create(0, memberDB_TableSize, sizeof(hacdcMember));
+	
 	if (strncmp("countMembers", line, 12) == 0) {
 		Serial.print( "\n" );
 		Serial.print(memberDB.count());
@@ -100,8 +104,9 @@ void processLineSerial(char line[]) {
 		
 		for (int i = 1; i <= memberDB.count(); i++)
 		{
-			Serial.print("addMember	");
 			memberDB.readRec(i, EDB_REC hacdcMemberInProgress);
+			
+			Serial.print("addMember	");
 			Serial.print("	");
 			for (int i=0; i < 4; i++)
 				Serial.print(hacdcMemberInProgress.shortName[i]);
@@ -163,7 +168,7 @@ void setup() {
 	
 	int led = A5;
 	
-	memberDB.create(0, memberDB_TableSize, sizeof(hacdcMember));
+	memberDB.open(0);
 	
 	//LED startup indicator, and delay for host serial console.
 	pinMode(led, OUTPUT);
