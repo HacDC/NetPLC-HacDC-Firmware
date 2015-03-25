@@ -7,3 +7,6 @@
 [submodule "lib/WebServer"]
 	path = lib/WebServer
 	url = git@github.com:sirleech/Webduino.git
+[submodule "lib/metarepos/Arduino-Libraries"]
+	path = lib/metarepos/Arduino-Libraries
+	url = git@github.com:thijse/Arduino-Libraries.git
