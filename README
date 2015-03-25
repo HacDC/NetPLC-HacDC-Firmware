@@ -3,7 +3,19 @@ See the end of the file for license conditions.
 See license.txt for NetPLC-HacDC-Firmware license conditions.
 
 __Usage__
+Normal RFID operation only requires local EEPROM database. Management for this database provided by CLI interface available through USB or wired ethernet.
 
+Other functions operate on a strictly http-client basis. 
+*) Open-Door latch override setting periodically checked from HTTP.
+*) RFID entry log buffer is periodically uploaded through HTTP.
+
+*) RFID credential database periodically uploaded through HTTP.
+
+*) RFID credential database periodically checked for new entries from HTTP.
+*) RFID credential database periodically checked for revoked entries from HTTP.
+
+*) Occupancy sensor status change leads to immediate update through HTTP get request.
+*) Sensor values periodically uploaded through HTTP.
 
 __Design__
 

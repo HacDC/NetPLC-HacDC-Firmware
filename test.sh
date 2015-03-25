@@ -37,6 +37,6 @@ readableMake upload
 #../cmake/ard-reset-arduino --caterina /dev/ttyACM0
 sleep 1
 
-make WebUI-serial
+make CLI-serial
 
 echo -e '\E[1;32;46m Compilation finished. \E[0m'
