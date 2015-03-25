@@ -14,7 +14,7 @@
 struct hacdcMember {
   char shortName[4];
   int tagID;
-  uint8_t permitted;	//Binary, true/false, 1/0.
+  uint8_t enabled;	//Binary, true/false, 1/0.
 } hacdcMember;
 
 // The read and write handlers for using the EEPROM Library
@@ -70,7 +70,10 @@ void processLineSerial(char line[]) {
 			"formatMembers\n"
 			"countMembers\n"
 			"showMembers\n"
-			"addMember\n"
+			"addMember <shortName> <tagID> <1/0>\n"
+			"delMember <recno>\n"
+			"enableMember <recno>\n"
+			"disableMember <recno>\n"
 		);
 	
 	if (strncmp("shownet", line, 7) == 0) {
@@ -113,7 +116,7 @@ void processLineSerial(char line[]) {
 			Serial.print("	");
 			Serial.print(hacdcMemberInProgress.tagID);
 			Serial.print("	");
-			Serial.print(hacdcMemberInProgress.permitted);
+			Serial.print(hacdcMemberInProgress.enabled);
 			Serial.print("	#");
 			Serial.print(i);
 			Serial.print("\n");
@@ -122,15 +125,49 @@ void processLineSerial(char line[]) {
 	
 	if (strncmp("addMember", line, 9) == 0) {
 		char *token;
-		struct hacdcMember hacdcMemberInProgress;
+		strtok(line, "	");	//Discard known command token.
 		
-		strtok(line, "	");
+		struct hacdcMember hacdcMemberInProgress;
 		
 		strncpy(hacdcMemberInProgress.shortName, strtok(NULL, "	"), 4);
 		hacdcMemberInProgress.tagID = atoi((strtok(NULL, "	")));
-		hacdcMemberInProgress.permitted = atoi((strtok(NULL, "	")));
+		hacdcMemberInProgress.enabled = atoi((strtok(NULL, "	")));
 		
 		memberDB.appendRec(EDB_REC hacdcMemberInProgress);
+	}
+	
+	if (strncmp("delMember", line, 9) == 0) {
+		char *token;
+		strtok(line, "	");	//Discard known command token.
+		
+		memberDB.deleteRec(atoi((strtok(NULL, "	"))));
+		
+	}
+	
+	if (strncmp("enableMember", line, 9) == 0) {
+		char *token;
+		strtok(line, "	");	//Discard known command token.
+		
+		struct hacdcMember hacdcMemberInProgress;
+		
+		int recno=atoi(strtok(NULL, "	"));
+		
+		memberDB.readRec(recno, EDB_REC hacdcMemberInProgress);
+		hacdcMemberInProgress.enabled = 1;
+		memberDB.updateRec(recno,EDB_REC hacdcMemberInProgress);
+	}
+	
+	if (strncmp("disableMember", line, 9) == 0) {
+		char *token;
+		strtok(line, "	");	//Discard known command token.
+		
+		struct hacdcMember hacdcMemberInProgress;
+		
+		int recno=atoi(strtok(NULL, "	"));
+		
+		memberDB.readRec(recno, EDB_REC hacdcMemberInProgress);
+		hacdcMemberInProgress.enabled = 0;
+		memberDB.updateRec(recno,EDB_REC hacdcMemberInProgress);
 	}
 	
 }
