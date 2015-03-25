@@ -27,7 +27,7 @@ void processLineEthernet(char line[], EthernetClient client) {
 	
 	if (strncmp("readout", line, 7) == 0)
 		client.write( "\n"
-			"stuff\n"
+			"analog stuff\n"
 		);
 	
 	if (strncmp("exit", line, 4) == 0)
@@ -38,8 +38,20 @@ void processLineSerial(char line[]) {
 	if (strncmp("commands", line, 8) == 0)
 		Serial.print( "\n"
 			"commands\n"
+			"shownet\n"
 			"readout\n"
 		);
+	
+	if (strncmp("shownet", line, 7) == 0) {
+		Serial.print("\n"
+			"IP address: ");
+		for (byte thisByte = 0; thisByte < 4; thisByte++) {
+			// print the value of each byte of the IP address:
+			Serial.print(Ethernet.localIP()[thisByte], DEC);
+			Serial.print(".");
+		}
+		Serial.println();
+	}
 	
 	if (strncmp("readout", line, 7) == 0)
 		Serial.print( "\n"
@@ -96,9 +108,9 @@ void setup() {
 	// print your local IP address:
 	Serial.print("IP address: ");
 	for (byte thisByte = 0; thisByte < 4; thisByte++) {
-	// print the value of each byte of the IP address:
-	Serial.print(Ethernet.localIP()[thisByte], DEC);
-	Serial.print(".");
+		// print the value of each byte of the IP address:
+		Serial.print(Ethernet.localIP()[thisByte], DEC);
+		Serial.print(".");
 	}
 	Serial.println();
 
