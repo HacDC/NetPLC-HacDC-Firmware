@@ -1,3 +1,9 @@
 [submodule "lib/EtherCard"]
 	path = lib/EtherCard
 	url = git@github.com:jcw/ethercard.git
+[submodule "lib/UIPEthernet"]
+	path = lib/UIPEthernet
+	url = git@github.com:ntruchsess/arduino_uip.git
+[submodule "lib/WebServer"]
+	path = lib/WebServer
+	url = git@github.com:sirleech/Webduino.git
