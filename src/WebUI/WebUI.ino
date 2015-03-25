@@ -39,18 +39,21 @@ static word homePage() {
     "\r\n"
     //"<meta http-equiv='refresh' content='1'/>"
     "<title>ENC28J60 Web Interface - HacDC NetPLC</title>"
-    "<p>Uptime: $D$D:$D$D:$D$</p>"
-    "<p>Ready to authorize: <input type='text' id='myText' value='anon'></p>"
+    "<p>Uptime: $D$D:$D$D:$D$D</p>"
+    "<p>Ready to authorize: <form action='' method='get'><input type='text' name='name' value='anon'><input type='submit' value='Submit'></forum></p>"
     "<p>Internal LED: <form action='' method='get'><button name='LED' type='submit' value='ON'>ON</button><button name='LED' type='submit' value='OFF'>OFF</button></form></p>"
     ""),
       h/10, h%10, m/10, m%10, s/10, s%10);
   return bfill.position();
 }
 
-void processData(char* data) {
+void processData(char* pair) {
 	
-	if (strncmp("GET / xyz", data, 10) != 0)
-		xyz = 1;
+	char* value = strchr((char *)pair, '=') + 1;
+	
+	Serial.println((char *)pair);
+	//Serial.println((char *)value);
+	
 }
 
 void setup() {
@@ -88,12 +91,37 @@ void loop() {
 	
 	if (pos)  {// check if valid tcp data is received
 		
-		//http://192.168.50.118/?LED=OFF
-		if (strstr((char *)Ethernet::buffer + pos, "GET /?LED=OFF") != 0) {
-			digitalWrite(led, LOW);
-		}
-		else if (strstr((char *)Ethernet::buffer + pos, "GET /?LED=ON") != 0) {
-			digitalWrite(led, HIGH);
+		if (strncmp("GET /?", (char *) Ethernet::buffer + pos, 6) == 0) {
+			
+			Serial.println("ROOT GET DETECTED! #####");
+			
+			byte paramBuffer[35];
+			
+			strncpy((char *) paramBuffer, (char *) Ethernet::buffer + pos + 6, 30);
+			
+			
+			char* pair = strtok((char *) paramBuffer, "&");
+
+			while( pair != NULL ) {
+				
+				processData(pair);
+				
+				pair = strtok(NULL, "&");
+			}
+			
+		
+			//http://192.168.50.118/?LED=OFF
+			/*
+			if (strstr((char *)Ethernet::buffer + pos, "LED=OFF") != 0) {
+				digitalWrite(led, LOW);
+			}
+			else if (strstr((char *)Ethernet::buffer + pos, "LED=ON") != 0) {
+				digitalWrite(led, HIGH);
+			}
+			*/
+			
+			//Serial.println((char *)name);
+			//Serial.println((char *)value);
 		}
 		
 		Serial.println((char *)Ethernet::buffer + pos);
