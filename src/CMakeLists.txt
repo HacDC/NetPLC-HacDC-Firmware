@@ -19,4 +19,4 @@ generate_arduino_firmware(CLI
     SKETCH CLI
     PROGRAMMER avrispmkii
     PORT /dev/ttyACM0
-    SERIAL picocom @SERIAL_PORT@ -b 115200 -l)
+    SERIAL picocom -c  --imap "lfcrlf" @SERIAL_PORT@ -b 115200 -l)

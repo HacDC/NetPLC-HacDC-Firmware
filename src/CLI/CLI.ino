@@ -17,13 +17,38 @@ static uint8_t ip[] = { 192, 168, 50, 123 };
 //Telnet style server, port 1000.
 EthernetServer server = EthernetServer(1000);
 
-void processLine(char line[]) {
+void processLineEthernet(char line[], EthernetClient client) {
 	if (strncmp("commands", line, 8) == 0)
-		server.write("commands");
+		client.write( "\n"
+			"commands\n"
+			"readout\n"
+			"exit\n"
+		);
+	
+	if (strncmp("readout", line, 7) == 0)
+		client.write( "\n"
+			"stuff\n"
+		);
+	
+	if (strncmp("exit", line, 4) == 0)
+		client.stop();
 }
 
-void bufferLine(char newChar) {
-	char completeLine[264];
+void processLineSerial(char line[]) {
+	if (strncmp("commands", line, 8) == 0)
+		Serial.print( "\n"
+			"commands\n"
+			"readout\n"
+		);
+	
+	if (strncmp("readout", line, 7) == 0)
+		Serial.print( "\n"
+			"stuff\n"
+		);
+}
+
+char* bufferLine(char newChar) {
+	static char completeLine[264];
 	static char line[256];
 	static int pos=0;
 	
@@ -31,21 +56,21 @@ void bufferLine(char newChar) {
 	if (pos >= 256)
 		pos=0;
 	
- 	//Recognize end of command input.
-	if (newChar == '\n') {
+	//Recognize end of command input.
+	if (newChar == '\n' || newChar == '\r') {
 		
 		for(int i=0; i<pos; i++)
 			completeLine[i] = line[i];
 		completeLine[pos] = '\0';
 		
-		processLine(completeLine);
-		
 		pos=0;
-		return;
+		return completeLine;
 	}
 	
 	line[pos]=newChar;
 	pos++;
+	
+	return NULL;
 }
 
 void setup() {
@@ -66,17 +91,36 @@ void setup() {
 	trueDelay(1500);
 	
 	
-	Ethernet.begin(mac,ip);
+	Ethernet.begin(mac);
+	
+	// print your local IP address:
+	Serial.print("IP address: ");
+	for (byte thisByte = 0; thisByte < 4; thisByte++) {
+	// print the value of each byte of the IP address:
+	Serial.print(Ethernet.localIP()[thisByte], DEC);
+	Serial.print(".");
+	}
+	Serial.println();
 
 	server.begin();
 }
 
 void loop() {
 	size_t size;
+	char* completeLine;
 	
+	//Primary CLI interface. Use: nc <ip.ip.ip.ip> <port>
 	if (EthernetClient client = server.available()) {
 		while((client.available()) > 0)
-			bufferLine(client.read());
-		//client.stop();
+			if ( (completeLine = bufferLine(client.read())) != NULL)
+				processLineEthernet(completeLine, client);
 	}
+	
+	//WARNING. Serial CLI is intended as recovery fallback only.
+	//Serial port use may reset platform, and data may be interleaved if both serial and ethernet CLI are used simultaneously.
+	while (Serial.available() > 0)
+		if ( (completeLine = bufferLine(Serial.read())) != NULL)
+				processLineSerial(completeLine);
+	
+	
 }
