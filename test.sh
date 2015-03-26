@@ -32,7 +32,7 @@ cd "$scriptAbsoluteFolder"
 mkdir -p ./build
 cd ./build
 readableCMake -DCMAKE_BUILD_TYPE=Release ../
-readableMake upload
+while ! make upload ; do sleep 0.1 ; done
 
 #../cmake/ard-reset-arduino --caterina /dev/ttyACM0
 sleep 1
