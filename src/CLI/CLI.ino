@@ -320,7 +320,7 @@ void setup() {
 
 	Serial.begin(115200);	// Maybe a lot faster over native USB.
 	
-	Serial1.begin(9600);
+	Serial1.begin(9600 * 2); //Double baud, accomodated clock prescaler.
 	
 	memberDB.open(0);
 	
@@ -357,27 +357,35 @@ void loop() {
 				processLineSerial(completeLine);
 	
 	//RFID
+	while (Serial1.available() > 0) {
+		int i;
+		i = Serial1.read();
+		Serial.print(i, DEC);
+		Serial.print(" ");
+	}
+	/*
 	if (Serial1.available() > 0) {
 		delay(100); // needed to allow time for the data to come in from the serial
 		
 		//14 characters. Characters 1 and 14 are start/stop codes. Characters 12 and 13 are checksums.
 		int readTag[14];
-		
-		if (Serial1.read() == '3') {
-			readTag[13] = '3';
-			for (int i = (13 - 1) ; i >= 0 ; i--) { // read the rest of the tag
-				readTag[i] = Serial1.read();
-			}
+		for (int i = 13 ; i >= 0 ; i--) { // read the rest of the tag
+			readTag[i] = Serial1.read();
 		}
 		Serial1.flush(); // stops multiple reads... may also frustrate brute-force attacks
 		
-		uint16_t hashTag = pearsonHash(readTag, 14);
+		//uint16_t hashTag = pearsonHash(readTag, 14);
 		
-		//If RFID code ends with valid character.
-		if (readTag[0] == '3')
-			Serial.println(hashTag);
+		//Serial.println(hashTag);
+		
+		for (int j = 0 ; j <= 13 ; j++) { // read the tag
+			Serial.print(readTag[j]);
+		}
+		
+		Serial.println();
 		
 	}
+	*/
 	
 	//Occupancy Sensor
 	sampleAll();
