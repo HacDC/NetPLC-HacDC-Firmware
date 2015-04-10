@@ -13,7 +13,7 @@
 //*****Net
 // ethernet interface mac address, must be unique on the LAN
 byte mymac[] = { 0x74,0x69,0x69,0x2D,0x30,0x31 };
-static byte session;
+static byte session = NULL;
 byte Ethernet::buffer[500];
 Stash stash;
 
@@ -131,7 +131,9 @@ void processLineSerial(char line[]) {
 			"addMember <shortName> <tagID> <1/0>\n"
 			"delMember <recno>\n"
 			"enableMember <recno>\n"
-			"disableMember <recno>\n")
+			"disableMember <recno>\n"
+			"closeSpace\n"
+			"openSpace\n")
 		);
 	
 	if (strncmp("shownet", line, 7) == 0) {
@@ -250,7 +252,13 @@ void processLineSerial(char line[]) {
 		memberDB.readRec(recno, EDB_REC hacdcMemberInProgress);
 		hacdcMemberInProgress.enabled = 0;
 		memberDB.updateRec(recno,EDB_REC hacdcMemberInProgress);
-	}	
+	}
+	
+	if (strncmp("closeSpace", line, 10) == 0)
+		sendStatus(0);
+	
+	if (strncmp("openSpace", line, 9) == 0)
+		sendStatus(1);
 }
 
 char* bufferLine(char newChar) {
@@ -280,11 +288,7 @@ char* bufferLine(char newChar) {
 }
 
 //*****Net
-void sendStatus() {
-	if (ether.begin(sizeof Ethernet::buffer, mymac) == 0) 
-		Serial.println(F("!!!!!Failed to access Ethernet controller"));
-	
-	
+void sendStatus(int open) {
 	
 	if (!ether.dhcpSetup())
 		Serial.println(F("!!!!!DHCP failed"));
@@ -294,7 +298,12 @@ void sendStatus() {
 	
 	
 	byte sd = stash.create();
-	stash.print("subject=Lights=false&date=Friday,_Apr_10_at_1:52_AM&body=GPIO4=true;GPIO5=true;FA3=true;FA4=true;FA5=true");
+	
+	if (open)
+		stash.print("open=true");
+	else
+		stash.print("open=false");
+	
 	stash.save();
 	int stash_size = stash.size();
 	
@@ -325,29 +334,8 @@ void setup() {
 	digitalWrite(led, HIGH);
 	trueDelay(1500);
 	
-	
-	
-	//*****Net.
-	sendStatus();
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
+	if (ether.begin(sizeof Ethernet::buffer, mymac) == 0) 
+		Serial.println(F("!!!!!Failed to access Ethernet controller"));
 }
 
 void loop() {
