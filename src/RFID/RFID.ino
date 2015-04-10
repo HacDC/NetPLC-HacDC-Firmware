@@ -306,12 +306,8 @@ void loop() {
 		
 		//14 characters. Characters 1 and 14 are start/stop codes. Characters 12 and 13 are checksums.
 		int readTag[14];
-		
-		if (Serial1.read() == '2')
-			readTag[13] = '2';
-			for (int i = (13 - 1) ; i >= 0 ; i--) { // read the rest of the tag
-				readTag[i] = Serial1.read();
-			}
+		for (int i = 13 ; i >= 0 ; i--) { // read the rest of the tag
+			readTag[i] = Serial1.read();
 		}
 		Serial1.flush(); // stops multiple reads... may also frustrate brute-force attacks
 		

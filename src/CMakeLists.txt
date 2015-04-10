@@ -17,6 +17,12 @@ set(ARDUINO_DEFAULT_PORT /dev/ttyACM0) # Default Port, when not specified
 #    PORT /dev/ttyACM0
 #    SERIAL picocom @SERIAL_PORT@ -b 115200 -l)
 
+#generate_arduino_firmware(RFID
+#    SKETCH RFID
+#    PROGRAMMER avrispmkii
+#    PORT /dev/ttyACM0
+#    SERIAL picocom @SERIAL_PORT@ -b 115200 -l)
+
 generate_arduino_firmware(CLI
     SKETCH CLI
     PROGRAMMER avrispmkii
