@@ -15,13 +15,13 @@
 //Global config and debug variables.
 const int led = A5;
 static long benchmark = 0;
-#define watchdogEnable
+//#define watchdogEnable
 
 //*****Net
 // ethernet interface mac address, must be unique on the LAN
 byte mymac[] = { 0x74,0x69,0x69,0x2D,0x30,0x31 };
 static byte session = NULL;
-byte Ethernet::buffer[500];
+byte Ethernet::buffer[256];
 Stash stash;
 
 //WARNING: Unpublished information.
@@ -334,7 +334,7 @@ void setup() {
 	trueDelay(1500);
 	
 	if (ether.begin(sizeof Ethernet::buffer, mymac) == 0) 
-		Serial.println(F("!!!!!Failed to access Ethernet controller"));
+		Serial.println(F("!!!!!ETH NIC failed"));
 	
 	sampleAll();
 	
@@ -387,12 +387,12 @@ void loop() {
 	
 	const char* reply = ether.tcpReply(session);
 	if (reply != 0) {
-	Serial.println("*****HTTP RESPONSE");
-	Serial.println(reply);
+		Serial.println(F("*****HTTP RESPONSE"));
+		Serial.println(reply);
 	}
 	
 	digitalWrite(led, LOW);
-	trueDelay(10);
+	trueDelay(100);
 	digitalWrite(led, HIGH);
 	
 	benchmark = trueMillis() - startBenchmark;
