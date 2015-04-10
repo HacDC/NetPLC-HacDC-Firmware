@@ -10,9 +10,12 @@
 
 #include <EtherCard.h>
 
+#include <avr/wdt.h>
+
 //Global config and debug variables.
 const int led = A5;
 static long benchmark = 0;
+#define watchdogEnable
 
 //*****Net
 // ethernet interface mac address, must be unique on the LAN
@@ -276,11 +279,23 @@ char* bufferLine(char newChar) {
 //*****Net
 void sendStatus(int open) {
 	
+	#ifdef watchdogEnable
+	wdt_reset();
+	#endif
+	
 	if (!ether.dhcpSetup())
 		Serial.println(F("!!!!!DHCP failed"));
+	
+	#ifdef watchdogEnable
+	wdt_reset();
+	#endif
 
 	if (!ether.dnsLookup(website))
 		Serial.println(F("!!!!!DNS failed"));
+	
+	#ifdef watchdogEnable
+	wdt_reset();
+	#endif
 	
 	
 	byte sd = stash.create();
@@ -322,6 +337,10 @@ void setup() {
 		Serial.println(F("!!!!!Failed to access Ethernet controller"));
 	
 	sampleAll();
+	
+	#ifdef watchdogEnable
+	wdt_enable(WDTO_8S);
+	#endif
 }
 
 void loop() {
@@ -373,8 +392,12 @@ void loop() {
 	}
 	
 	digitalWrite(led, LOW);
-	trueDelay(100);
+	trueDelay(10);
 	digitalWrite(led, HIGH);
 	
 	benchmark = trueMillis() - startBenchmark;
+	
+	#ifdef watchdogEnable
+	wdt_reset();
+	#endif
 }
