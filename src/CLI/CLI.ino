@@ -54,7 +54,7 @@ uint16_t pearsonHash(int input[], uint8_t inputLen) {
 #define memberDB_TableSize 480	//60 8-byte entries
 struct hacdcMember {
   char shortName[4];
-  int tagID;
+  uint16_t tagID;
   uint8_t enabled;	//Binary, true/false, 1/0.
 } hacdcMember;
 
@@ -72,44 +72,11 @@ byte reader(unsigned long address)
 // Create an EDB object with the appropriate write and read handlers
 EDB memberDB(&writer, &reader);
 
-// ethernet interface mac address, must be unique on the LAN
-//Xen prefix 00:16:3E, random suffix.
-static uint8_t mac[] = { 0x00, 0x16, 0x3E, 0x72, 0x6A, 0x48 };
-
-/* CHANGE THIS TO MATCH YOUR HOST NETWORK. Most home networks are in
-* the 192.168.0.XXX or 192.168.1.XXX subrange. Pick an address
-* that's not in use and isn't going to be automatically allocated by
-* DHCP from your router. */
-static uint8_t ip[] = { 192, 168, 50, 123 };
-
-//Telnet style server, port 1000.
-EthernetServer server = EthernetServer(1000);
-
-void processLineEthernet(char line[], EthernetClient client) {
-	/*
-	if (strncmp("commands", line, 8) == 0)
-		client.write( "\n"
-			"commands\n"
-			"readout\n"
-			"exit\n"
-		);
-	
-	if (strncmp("readout", line, 7) == 0)
-		client.write( "\n"
-			"analog stuff\n"
-		);
-	
-	if (strncmp("exit", line, 4) == 0)
-		client.stop();
-	*/
-}
-
 void processLineSerial(char line[]) {
 	if (strncmp("commands", line, 8) == 0)
 		Serial.print( "\n"
 			"commands\n"
 			"shownet\n"
-			/*
 			"readout\n"
 			"formatMembers\n"
 			"countMembers\n"
@@ -118,21 +85,22 @@ void processLineSerial(char line[]) {
 			"delMember <recno>\n"
 			"enableMember <recno>\n"
 			"disableMember <recno>\n"
-			*/
 		);
 	
 	if (strncmp("shownet", line, 7) == 0) {
 		Serial.print("\n"
-			"IP address: ");
+			"IP address: "
+			"N/A");
+		/*
 		for (byte thisByte = 0; thisByte < 4; thisByte++) {
 			// print the value of each byte of the IP address:
 			Serial.print(Ethernet.localIP()[thisByte], DEC);
 			Serial.print(".");
 		}
+		*/
 		Serial.println();
 	}
 	
-	/*
 	if (strncmp("readout", line, 7) == 0)
 		Serial.print( "\n"
 			"stuff\n"
@@ -214,8 +182,7 @@ void processLineSerial(char line[]) {
 		memberDB.readRec(recno, EDB_REC hacdcMemberInProgress);
 		hacdcMemberInProgress.enabled = 0;
 		memberDB.updateRec(recno,EDB_REC hacdcMemberInProgress);
-	}
-	*/	
+	}	
 }
 
 char* bufferLine(char newChar) {
@@ -264,41 +231,17 @@ void setup() {
 	digitalWrite(led, HIGH);
 	trueDelay(1500);
 	
-	
-	/*
-	 Ethernet.begin(mac);
-	
-	// print your local IP address:
-	Serial.print("IP address: ");
-	for (byte thisByte = 0; thisByte < 4; thisByte++) {
-		// print the value of each byte of the IP address:
-		Serial.print(Ethernet.localIP()[thisByte], DEC);
-		Serial.print(".");
-	}
-	Serial.println();
-
-	server.begin();
-	*/
 }
 
 void loop() {
-	/*
 	size_t size;
 	char* completeLine;
 	
-	//Primary CLI interface. Use: nc <ip.ip.ip.ip> <port>
-	if (EthernetClient client = server.available()) {
-		while((client.available()) > 0)
-			if ( (completeLine = bufferLine(client.read())) != NULL)
-				processLineEthernet(completeLine, client);
-	}
-	
-	//WARNING. Serial CLI is intended as recovery fallback only.
+	//Serial CLI. May conflict with network CLI.
 	//Serial port use may reset platform, and data may be interleaved if both serial and ethernet CLI are used simultaneously.
 	while (Serial.available() > 0)
 		if ( (completeLine = bufferLine(Serial.read())) != NULL)
 				processLineSerial(completeLine);
-	*/
 	
 	//RFID
 	if (Serial1.available() > 0) {
@@ -307,8 +250,8 @@ void loop() {
 		//14 characters. Characters 1 and 14 are start/stop codes. Characters 12 and 13 are checksums.
 		int readTag[14];
 		
-		if (Serial1.read() == '2')
-			readTag[13] = '2';
+		if (Serial1.read() == '3') {
+			readTag[13] = '3';
 			for (int i = (13 - 1) ; i >= 0 ; i--) { // read the rest of the tag
 				readTag[i] = Serial1.read();
 			}
@@ -317,7 +260,9 @@ void loop() {
 		
 		uint16_t hashTag = pearsonHash(readTag, 14);
 		
-		Serial.println(hashTag);
+		//If RFID code ends with valid character.
+		if (readTag[0] == '3')
+			Serial.println(hashTag);
 		
 	}
 	
