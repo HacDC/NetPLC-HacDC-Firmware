@@ -8,6 +8,18 @@
 //#include "EEPROMex.h"
 #include "EDB.h"
 
+#include <EtherCard.h>
+
+//*****Net
+// ethernet interface mac address, must be unique on the LAN
+byte mymac[] = { 0x74,0x69,0x69,0x2D,0x30,0x31 };
+static byte session;
+byte Ethernet::buffer[500];
+Stash stash;
+
+//WARNING: Unpublished information.
+#include "occCred.h"
+
 //*****Occupancy Sensor
 //Macro function for low pass filter.
 #define lowPass(newFloat, returnFloat, oldFloat, inertiaFloat) { returnFloat = oldFloat + (inertiaFloat * (newFloat - oldFloat)); oldFloat = returnFloat; }
@@ -109,7 +121,7 @@ EDB memberDB(&writer, &reader);
 //*****CLI
 void processLineSerial(char line[]) {
 	if (strncmp("commands", line, 8) == 0)
-		Serial.print( "\n"
+		Serial.print( F("\n"
 			"commands\n"
 			"shownet\n"
 			"readout\n"
@@ -119,7 +131,7 @@ void processLineSerial(char line[]) {
 			"addMember <shortName> <tagID> <1/0>\n"
 			"delMember <recno>\n"
 			"enableMember <recno>\n"
-			"disableMember <recno>\n"
+			"disableMember <recno>\n")
 		);
 	
 	if (strncmp("shownet", line, 7) == 0) {
@@ -181,7 +193,7 @@ void processLineSerial(char line[]) {
 		{
 			memberDB.readRec(i, EDB_REC hacdcMemberInProgress);
 			
-			Serial.print("addMember	");
+			Serial.print(F("addMember	"));
 			Serial.print("	");
 			for (int i=0; i < 4; i++)
 				Serial.print(hacdcMemberInProgress.shortName[i]);
@@ -189,7 +201,7 @@ void processLineSerial(char line[]) {
 			Serial.print(hacdcMemberInProgress.tagID);
 			Serial.print("	");
 			Serial.print(hacdcMemberInProgress.enabled);
-			Serial.print("	#");
+			Serial.print(F("	#"));
 			Serial.print(i);
 			Serial.print("\n");
 		}
@@ -244,12 +256,12 @@ void processLineSerial(char line[]) {
 }
 
 char* bufferLine(char newChar) {
-	static char completeLine[264];
-	static char line[256];
+	static char completeLine[48];
+	static char line[32];
 	static int pos=0;
 	
 	//Clear overloaded buffer.
-	if (pos >= 256)
+	if (pos >= 32)
 		pos=0;
 	
 	//Recognize end of command input.
@@ -289,6 +301,54 @@ void setup() {
 	trueDelay(100);
 	digitalWrite(led, HIGH);
 	trueDelay(1500);
+	
+	
+	
+	//*****Net.
+	
+	
+	if (ether.begin(sizeof Ethernet::buffer, mymac) == 0) 
+	Serial.println(F("Failed to access Ethernet controller"));
+	if (!ether.dhcpSetup())
+	Serial.println(F("DHCP failed"));
+
+	ether.printIp("IP:  ", ether.myip);
+	ether.printIp("GW:  ", ether.gwip);  
+	ether.printIp("DNS: ", ether.dnsip);  
+
+	if (!ether.dnsLookup(website))
+	Serial.println(F("DNS failed"));
+
+	ether.printIp("SRV: ", ether.hisip);
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	Serial.println(F("Sending data..."));
+	
+	byte sd = stash.create();
+	stash.print("subject=Lights=false&date=Friday,_Apr_10_at_1:52_AM&body=GPIO4=true;GPIO5=true;FA3=true;FA4=true;FA5=true");
+	stash.save();
+	int stash_size = stash.size();
+	
+	Stash::prepare(PSTR("GET http://$F/" inputPage "?$H HTTP/1.0" "\n\n"), website, sd);
+	
+	session = ether.tcpSend();
+	
+	
+	
+	
+	
+	
+	
+	
 	
 }
 
@@ -333,6 +393,15 @@ void loop() {
 	lowPass((float)analogRead(4), filteredAnalogPin4, oldAnalogPin4, IIRinertia);
 	lowPass((float)analogRead(5), filteredAnalogPin5, oldAnalogPin5, IIRinertia);
 	
+	
+	//Net
+	ether.packetLoop(ether.packetReceive());
+	
+	const char* reply = ether.tcpReply(session);
+	if (reply != 0) {
+	Serial.println("Got a response!");
+	Serial.println(reply);
+	}
 	
 	
 	//Serial.println();
