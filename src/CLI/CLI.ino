@@ -3,12 +3,46 @@
 #include "prescaler.h"
 
 #include "SPI.h"
-#include "UIPEthernet.h"
 
 #include <EEPROM.h>
 //#include "EEPROMex.h"
 #include "EDB.h"
 
+//*****Occupancy Sensor
+//Macro function for low pass filter.
+#define lowPass(newFloat, returnFloat, oldFloat, inertiaFloat) { returnFloat = oldFloat + (inertiaFloat * (newFloat - oldFloat)); oldFloat = returnFloat; }
+
+float IIRinertia = 0.001;
+
+float oldAnalogPin0 = 0;
+float filteredAnalogPin0 = 0;
+float oldAnalogPin1 = 0;
+float filteredAnalogPin1 = 0;
+float oldAnalogPin2 = 0;
+float filteredAnalogPin2 = 0;
+float oldAnalogPin3 = 0;
+float filteredAnalogPin3 = 0;
+float oldAnalogPin4 = 0;
+float filteredAnalogPin4 = 0;
+float oldAnalogPin5 = 0;
+float filteredAnalogPin5 = 0;
+
+//Outputs analog pin status.
+void printAnalogPin(int pinToPoll) {
+	Serial.print("A");
+	Serial.print(pinToPoll);
+	Serial.print("=");
+	Serial.print(analogRead(pinToPoll));
+}
+//Outputs filtered pin status.
+void printFilteredPin(String pinName, float pinValue) {
+	Serial.print("F");
+	Serial.print(pinName);
+	Serial.print("=");
+	Serial.print(pinValue, 0);
+}
+
+//*****RFID
 //Hash summary function to meaningfully reduce ID tag length.
 uint16_t pearsonHash(int input[], uint8_t inputLen) {
 	// 256 values 0-255 in any (random) order suffices
@@ -72,6 +106,7 @@ byte reader(unsigned long address)
 // Create an EDB object with the appropriate write and read handlers
 EDB memberDB(&writer, &reader);
 
+//*****CLI
 void processLineSerial(char line[]) {
 	if (strncmp("commands", line, 8) == 0)
 		Serial.print( "\n"
@@ -101,10 +136,33 @@ void processLineSerial(char line[]) {
 		Serial.println();
 	}
 	
-	if (strncmp("readout", line, 7) == 0)
-		Serial.print( "\n"
-			"stuff\n"
-		);
+	if (strncmp("readout", line, 7) == 0) {
+		printAnalogPin(0);
+		Serial.print(";");
+		printAnalogPin(1);
+		Serial.print(";");
+		printAnalogPin(2);
+		Serial.print(";");
+		printAnalogPin(3);
+		Serial.print(";");
+		printAnalogPin(4);
+		Serial.print(";");
+		printAnalogPin(5);
+		Serial.print("\n");
+		
+		printFilteredPin("A0",filteredAnalogPin0);
+		Serial.print(";");
+		printFilteredPin("A1",filteredAnalogPin1);
+		Serial.print(";");
+		printFilteredPin("A2",filteredAnalogPin2);
+		Serial.print(";");
+		printFilteredPin("A3",filteredAnalogPin3);
+		Serial.print(";");
+		printFilteredPin("A4",filteredAnalogPin4);
+		Serial.print(";");
+		printFilteredPin("A5",filteredAnalogPin5);
+		Serial.print("\n");
+	}
 	
 	if (strncmp("formatMembers", line, 13) == 0)
 		memberDB.create(0, memberDB_TableSize, sizeof(hacdcMember));
@@ -211,6 +269,7 @@ char* bufferLine(char newChar) {
 	return NULL;
 }
 
+//*****Arduino Sketch
 void setup() {
 	setClockPrescaler(0x1);	//<8MHz for reliable 3.3V operation. >1MHz recommended.
 
@@ -265,6 +324,16 @@ void loop() {
 			Serial.println(hashTag);
 		
 	}
+	
+	//Occupancy Sensor
+	lowPass((float)analogRead(0), filteredAnalogPin0, oldAnalogPin0, IIRinertia);
+	lowPass((float)analogRead(1), filteredAnalogPin1, oldAnalogPin1, IIRinertia);
+	lowPass((float)analogRead(2), filteredAnalogPin2, oldAnalogPin2, IIRinertia);
+	lowPass((float)analogRead(3), filteredAnalogPin3, oldAnalogPin3, IIRinertia);
+	lowPass((float)analogRead(4), filteredAnalogPin4, oldAnalogPin4, IIRinertia);
+	lowPass((float)analogRead(5), filteredAnalogPin5, oldAnalogPin5, IIRinertia);
+	
+	
 	
 	//Serial.println();
 	
