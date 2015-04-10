@@ -135,16 +135,14 @@ void processLineSerial(char line[]) {
 		);
 	
 	if (strncmp("shownet", line, 7) == 0) {
-		Serial.print("\n"
-			"IP address: "
-			"N/A");
-		/*
-		for (byte thisByte = 0; thisByte < 4; thisByte++) {
-			// print the value of each byte of the IP address:
-			Serial.print(Ethernet.localIP()[thisByte], DEC);
-			Serial.print(".");
-		}
-		*/
+		Serial.print("\n");
+		
+		ether.printIp("IP:  ", ether.myip);
+		ether.printIp("GW:  ", ether.gwip);
+		ether.printIp("DNS: ", ether.dnsip);
+		
+		ether.printIp("SRV: ", ether.hisip);
+		
 		Serial.println();
 	}
 	
@@ -281,6 +279,31 @@ char* bufferLine(char newChar) {
 	return NULL;
 }
 
+//*****Net
+void sendStatus() {
+	if (ether.begin(sizeof Ethernet::buffer, mymac) == 0) 
+		Serial.println(F("!!!!!Failed to access Ethernet controller"));
+	
+	
+	
+	if (!ether.dhcpSetup())
+		Serial.println(F("!!!!!DHCP failed"));
+
+	if (!ether.dnsLookup(website))
+		Serial.println(F("!!!!!DNS failed"));
+	
+	
+	byte sd = stash.create();
+	stash.print("subject=Lights=false&date=Friday,_Apr_10_at_1:52_AM&body=GPIO4=true;GPIO5=true;FA3=true;FA4=true;FA5=true");
+	stash.save();
+	int stash_size = stash.size();
+	
+	Stash::prepare(PSTR("GET http://$F/" inputPage "?$H HTTP/1.0" "\n\n"), website, sd);
+	
+	session = ether.tcpSend();
+	
+}
+
 //*****Arduino Sketch
 void setup() {
 	setClockPrescaler(0x1);	//<8MHz for reliable 3.3V operation. >1MHz recommended.
@@ -305,21 +328,7 @@ void setup() {
 	
 	
 	//*****Net.
-	
-	
-	if (ether.begin(sizeof Ethernet::buffer, mymac) == 0) 
-	Serial.println(F("Failed to access Ethernet controller"));
-	if (!ether.dhcpSetup())
-	Serial.println(F("DHCP failed"));
-
-	ether.printIp("IP:  ", ether.myip);
-	ether.printIp("GW:  ", ether.gwip);  
-	ether.printIp("DNS: ", ether.dnsip);  
-
-	if (!ether.dnsLookup(website))
-	Serial.println(F("DNS failed"));
-
-	ether.printIp("SRV: ", ether.hisip);
+	sendStatus();
 	
 	
 	
@@ -330,17 +339,6 @@ void setup() {
 	
 	
 	
-	
-	Serial.println(F("Sending data..."));
-	
-	byte sd = stash.create();
-	stash.print("subject=Lights=false&date=Friday,_Apr_10_at_1:52_AM&body=GPIO4=true;GPIO5=true;FA3=true;FA4=true;FA5=true");
-	stash.save();
-	int stash_size = stash.size();
-	
-	Stash::prepare(PSTR("GET http://$F/" inputPage "?$H HTTP/1.0" "\n\n"), website, sd);
-	
-	session = ether.tcpSend();
 	
 	
 	
@@ -399,7 +397,7 @@ void loop() {
 	
 	const char* reply = ether.tcpReply(session);
 	if (reply != 0) {
-	Serial.println("Got a response!");
+	Serial.println("*****HTTP RESPONSE");
 	Serial.println(reply);
 	}
 	
