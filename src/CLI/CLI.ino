@@ -10,6 +10,10 @@
 
 #include <EtherCard.h>
 
+//Global config and debug variables.
+const int led = A5;
+static long benchmark = 0;
+
 //*****Net
 // ethernet interface mac address, must be unique on the LAN
 byte mymac[] = { 0x74,0x69,0x69,0x2D,0x30,0x31 };
@@ -21,38 +25,7 @@ Stash stash;
 #include "occCred.h"
 
 //*****Occupancy Sensor
-//Macro function for low pass filter.
-#define lowPass(newFloat, returnFloat, oldFloat, inertiaFloat) { returnFloat = oldFloat + (inertiaFloat * (newFloat - oldFloat)); oldFloat = returnFloat; }
-
-float IIRinertia = 0.001;
-
-float oldAnalogPin0 = 0;
-float filteredAnalogPin0 = 0;
-float oldAnalogPin1 = 0;
-float filteredAnalogPin1 = 0;
-float oldAnalogPin2 = 0;
-float filteredAnalogPin2 = 0;
-float oldAnalogPin3 = 0;
-float filteredAnalogPin3 = 0;
-float oldAnalogPin4 = 0;
-float filteredAnalogPin4 = 0;
-float oldAnalogPin5 = 0;
-float filteredAnalogPin5 = 0;
-
-//Outputs analog pin status.
-void printAnalogPin(int pinToPoll) {
-	Serial.print("A");
-	Serial.print(pinToPoll);
-	Serial.print("=");
-	Serial.print(analogRead(pinToPoll));
-}
-//Outputs filtered pin status.
-void printFilteredPin(String pinName, float pinValue) {
-	Serial.print("F");
-	Serial.print(pinName);
-	Serial.print("=");
-	Serial.print(pinValue, 0);
-}
+#include "NetPLC_Analog.h"
 
 //*****RFID
 //Hash summary function to meaningfully reduce ID tag length.
@@ -149,30 +122,43 @@ void processLineSerial(char line[]) {
 	}
 	
 	if (strncmp("readout", line, 7) == 0) {
-		printAnalogPin(0);
+		
+		Serial.print(F("Ex1_A1="));
+		Serial.print(sample_Ex1_A1());
 		Serial.print(";");
-		printAnalogPin(1);
+		
+		Serial.print(F("Ex1_A2="));
+		Serial.print(sample_Ex1_A2());
 		Serial.print(";");
-		printAnalogPin(2);
+		
+		Serial.print(F("Ex1_A3="));
+		Serial.print(sample_Ex1_A3());
 		Serial.print(";");
-		printAnalogPin(3);
+		
+		Serial.print(F("Ex1_A4="));
+		Serial.print(sample_Ex1_A4());
 		Serial.print(";");
-		printAnalogPin(4);
+		
+		Serial.print(F("Ex2_P1="));
+		Serial.print(sample_Ex2_P1());
 		Serial.print(";");
-		printAnalogPin(5);
+		
+		Serial.print(F("Ex2_P2="));
+		Serial.print(sample_Ex2_P2());
+		Serial.print(";");
+		
+		Serial.print(F("Ex3_P1="));
+		Serial.print(sample_Ex3_P1());
+		Serial.print(";");
+		
+		Serial.print(F("Ex3_P2="));
+		Serial.print(sample_Ex3_P2());
+		Serial.print(";");
+		
 		Serial.print("\n");
 		
-		printFilteredPin("A0",filteredAnalogPin0);
-		Serial.print(";");
-		printFilteredPin("A1",filteredAnalogPin1);
-		Serial.print(";");
-		printFilteredPin("A2",filteredAnalogPin2);
-		Serial.print(";");
-		printFilteredPin("A3",filteredAnalogPin3);
-		Serial.print(";");
-		printFilteredPin("A4",filteredAnalogPin4);
-		Serial.print(";");
-		printFilteredPin("A5",filteredAnalogPin5);
+		Serial.print(F("Polling Interval="));
+		Serial.print(benchmark);
 		Serial.print("\n");
 	}
 	
@@ -321,8 +307,6 @@ void setup() {
 	
 	Serial1.begin(9600);
 	
-	int led = A5;
-	
 	memberDB.open(0);
 	
 	//LED startup indicator, and delay for host serial console.
@@ -336,9 +320,14 @@ void setup() {
 	
 	if (ether.begin(sizeof Ethernet::buffer, mymac) == 0) 
 		Serial.println(F("!!!!!Failed to access Ethernet controller"));
+	
+	sampleAll();
 }
 
 void loop() {
+	static long startBenchmark;
+	startBenchmark = trueMillis();
+	
 	size_t size;
 	char* completeLine;
 	
@@ -372,13 +361,7 @@ void loop() {
 	}
 	
 	//Occupancy Sensor
-	lowPass((float)analogRead(0), filteredAnalogPin0, oldAnalogPin0, IIRinertia);
-	lowPass((float)analogRead(1), filteredAnalogPin1, oldAnalogPin1, IIRinertia);
-	lowPass((float)analogRead(2), filteredAnalogPin2, oldAnalogPin2, IIRinertia);
-	lowPass((float)analogRead(3), filteredAnalogPin3, oldAnalogPin3, IIRinertia);
-	lowPass((float)analogRead(4), filteredAnalogPin4, oldAnalogPin4, IIRinertia);
-	lowPass((float)analogRead(5), filteredAnalogPin5, oldAnalogPin5, IIRinertia);
-	
+	sampleAll();
 	
 	//Net
 	ether.packetLoop(ether.packetReceive());
@@ -389,7 +372,9 @@ void loop() {
 	Serial.println(reply);
 	}
 	
+	digitalWrite(led, LOW);
+	trueDelay(100);
+	digitalWrite(led, HIGH);
 	
-	//Serial.println();
-	
+	benchmark = trueMillis() - startBenchmark;
 }
