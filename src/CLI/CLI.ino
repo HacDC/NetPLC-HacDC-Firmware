@@ -31,6 +31,9 @@ Stash stash;
 #include "NetPLC_Analog.h"
 
 //*****RFID
+int recentTag[14] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+uint16_t recentTagHash = 0;
+
 //Hash summary function to meaningfully reduce ID tag length.
 uint16_t pearsonHash(int input[], uint8_t inputLen) {
 	// 256 values 0-255 in any (random) order suffices
@@ -101,6 +104,7 @@ void processLineSerial(char line[]) {
 			"commands\n"
 			"shownet\n"
 			"readout\n"
+			"recentTag\n"
 			"formatMembers\n"
 			"countMembers\n"
 			"showMembers\n"
@@ -163,6 +167,20 @@ void processLineSerial(char line[]) {
 		Serial.print(F("Polling Interval="));
 		Serial.print(benchmark);
 		Serial.print("\n");
+		
+	}
+	
+	if (strncmp("recentTag", line, 9) == 0) {
+		for (int i = 0 ; i <= 13 ; i++) { // show the tag
+			Serial.print(recentTag[i]);
+			Serial.print(" ");
+		}
+			
+		Serial.println();
+			
+		recentTagHash = pearsonHash(recentTag, 14);
+	
+		Serial.println(recentTagHash);
 	}
 	
 	if (strncmp("formatMembers", line, 13) == 0)
@@ -357,35 +375,23 @@ void loop() {
 				processLineSerial(completeLine);
 	
 	//RFID
-	while (Serial1.available() > 0) {
-		int i;
-		i = Serial1.read();
-		Serial.print(i, DEC);
-		Serial.print(" ");
-	}
-	/*
 	if (Serial1.available() > 0) {
 		delay(100); // needed to allow time for the data to come in from the serial
 		
 		//14 characters. Characters 1 and 14 are start/stop codes. Characters 12 and 13 are checksums.
-		int readTag[14];
-		for (int i = 13 ; i >= 0 ; i--) { // read the rest of the tag
-			readTag[i] = Serial1.read();
+		for (int i = 0 ; i <= 13 ; i++) { // read the rest of the tag
+			if (Serial1.available() > 0)
+				recentTag[i] = Serial1.read();
 		}
 		Serial1.flush(); // stops multiple reads... may also frustrate brute-force attacks
 		
-		//uint16_t hashTag = pearsonHash(readTag, 14);
+		if (recentTag[0] == 2 && recentTag[13] == 3) {
 		
-		//Serial.println(hashTag);
+			//TODO Match to database.
 		
-		for (int j = 0 ; j <= 13 ; j++) { // read the tag
-			Serial.print(readTag[j]);
 		}
 		
-		Serial.println();
-		
 	}
-	*/
 	
 	//Occupancy Sensor
 	sampleAll();
