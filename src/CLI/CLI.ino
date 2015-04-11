@@ -97,6 +97,20 @@ byte reader(unsigned long address)
 // Create an EDB object with the appropriate write and read handlers
 EDB memberDB(&writer, &reader);
 
+//Recognize RFID tag.
+void processCredentials(struct hacdcMember hacdcMemberInProgress) {
+	
+	if (hacdcMemberInProgress.enabled == 1)
+		Serial.print(F("Accepted. HacDC Member: "));
+	
+	if (hacdcMemberInProgress.enabled == 0)
+		Serial.print(F("REJECTED: Unauthorized: "));
+	
+	for (int i=0; i < 4; i++)
+		Serial.print(hacdcMemberInProgress.shortName[i]);
+	Serial.print("\n");
+}
+
 //*****CLI
 void processLineSerial(char line[]) {
 	if (strncmp("commands", line, 8) == 0)
@@ -177,8 +191,6 @@ void processLineSerial(char line[]) {
 		}
 			
 		Serial.println();
-			
-		recentTagHash = pearsonHash(recentTag, 14);
 	
 		Serial.println(recentTagHash);
 	}
@@ -385,9 +397,18 @@ void loop() {
 		}
 		Serial1.flush(); // stops multiple reads... may also frustrate brute-force attacks
 		
+		recentTagHash = pearsonHash(recentTag, 14);
+		
 		if (recentTag[0] == 2 && recentTag[13] == 3) {
 		
-			//TODO Match to database.
+			struct hacdcMember hacdcMemberInProgress;
+			
+			for (int i = 1; i <= memberDB.count(); i++) {
+				memberDB.readRec(i, EDB_REC hacdcMemberInProgress);
+				
+				if (recentTagHash == hacdcMemberInProgress.tagID)
+					processCredentials(hacdcMemberInProgress);
+			}
 		
 		}
 		
