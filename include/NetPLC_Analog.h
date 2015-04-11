@@ -61,6 +61,7 @@ void printAll() {
 	Serial.print(sample_Ex1_A2());
 	Serial.print(";");
 	
+	/*
 	Serial.print(F("Ex1_A3="));
 	Serial.print(sample_Ex1_A3());
 	Serial.print(";");
@@ -68,6 +69,7 @@ void printAll() {
 	Serial.print(F("Ex1_A4="));
 	Serial.print(sample_Ex1_A4());
 	Serial.print(";");
+	*/
 	
 	Serial.print(F("Ex2_P1="));
 	Serial.print(sample_Ex2_P1());
@@ -91,8 +93,11 @@ void printAll() {
 void sampleAll() {
 	sample_Ex1_A1();
 	sample_Ex1_A2();
+	
+	/*
 	sample_Ex1_A3();
 	sample_Ex1_A4();
+	*/
 	
 	sample_Ex2_P1();
 	sample_Ex2_P2();

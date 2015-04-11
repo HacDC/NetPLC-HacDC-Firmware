@@ -97,6 +97,14 @@ byte reader(unsigned long address)
 // Create an EDB object with the appropriate write and read handlers
 EDB memberDB(&writer, &reader);
 
+//Unlock door.
+void openLatch() {
+	pinMode(Ex1_A4_raw, OUTPUT);
+	digitalWrite(Ex1_A4_raw, HIGH);
+	trueDelay(1000);
+	digitalWrite(Ex1_A4_raw, LOW);
+}
+
 //Recognize RFID tag.
 void processCredentials(struct hacdcMember hacdcMemberInProgress) {
 	
@@ -109,6 +117,9 @@ void processCredentials(struct hacdcMember hacdcMemberInProgress) {
 	for (int i=0; i < 4; i++)
 		Serial.print(hacdcMemberInProgress.shortName[i]);
 	Serial.print("\n");
+	
+	if (hacdcMemberInProgress.enabled == 1)
+		openLatch();
 }
 
 //*****CLI
@@ -366,11 +377,14 @@ void setup() {
 	if (ether.begin(sizeof Ethernet::buffer, mymac) == 0) 
 		Serial.println(F("!!!!!ETH NIC failed"));
 	
-	sampleAll();
-	
 	#ifdef watchdogEnable
 	wdt_enable(WDTO_8S);
 	#endif
+	
+	pinMode(1, OUTPUT);
+	digitalWrite(1, LOW);
+	
+	openLatch();
 }
 
 void loop() {
@@ -388,14 +402,17 @@ void loop() {
 	
 	//RFID
 	if (Serial1.available() > 0) {
-		delay(100); // needed to allow time for the data to come in from the serial
+		trueDelay(100); // needed to allow time for the data to come in from the serial
 		
 		//14 characters. Characters 1 and 14 are start/stop codes. Characters 12 and 13 are checksums.
 		for (int i = 0 ; i <= 13 ; i++) { // read the rest of the tag
 			if (Serial1.available() > 0)
 				recentTag[i] = Serial1.read();
 		}
-		Serial1.flush(); // stops multiple reads... may also frustrate brute-force attacks
+		
+		// stops multiple reads... may also frustrate brute-force attacks
+		while (Serial1.available() > 0)
+			Serial1.read();
 		
 		recentTagHash = pearsonHash(recentTag, 14);
 		
